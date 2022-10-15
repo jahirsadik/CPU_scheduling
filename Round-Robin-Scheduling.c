@@ -48,6 +48,12 @@ void insert_before(struct Node **head, struct Process process, struct Process be
         return;
     }
     struct Node *temp = *head;
+    if (temp->process.identifier == before.identifier)
+    {
+        new_node->next = temp;
+        *head = new_node;
+        return;
+    }
     while (temp->next != NULL)
     {
         if (temp->next->process.identifier == before.identifier)
@@ -117,7 +123,7 @@ void print(struct Node *head)
     int i = 1;
     while (head != NULL)
     {
-        printf("Process: %d, Arrival: %d, Burst: %d, identifier: %d remaining: %d\n", i++, head->process.arrival, head->process.burst,
+        printf("Process: %d, Arrival: %d, Burst: %d, identifier: %d Remaining: %d\n", i++, head->process.arrival, head->process.burst,
                head->process.identifier, head->process.remaining_time);
         head = head->next;
     }
@@ -153,16 +159,11 @@ void round_robin(struct Node **head, int time_quantum, struct Process processes[
         k++;
         temp = temp->next;
     }
-    // print size of linked list
-    printf("Size of linked list: %d\n", k);
     temp = *head;
     printf("--------------------------SIMULATION OF ROUND ROBIN--------------------------\n");
     // Looping until the total burst time is reached
     while (time < total)
     {
-        printf("///////\nLinked List now:");
-        print(*head);
-        printf("///////\n");
         // If the process has remaining time & the arrival time is less than equal to the current time
         if (temp->process.remaining_time > 0 && temp->process.arrival <= time)
         {
@@ -252,6 +253,6 @@ int main()
         insert(&head, processes[i]);
         i++;
     }
-    round_robin(&head, 1, processes, number_of_processes);
+    round_robin(&head, 4, processes, number_of_processes);
     return 0;
 }
