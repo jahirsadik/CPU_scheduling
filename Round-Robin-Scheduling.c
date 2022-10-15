@@ -17,13 +17,47 @@ struct Node
     struct Node *next;
 };
 
-// Function to insert a process into the linked list
+// Function to insert a process at the end of the linked list
 void insert(struct Node **head, struct Process process)
 {
     struct Node *new_node = (struct Node *)malloc(sizeof(struct Node));
     new_node->process = process;
-    new_node->next = *head;
-    *head = new_node;
+    new_node->next = NULL;
+    if (*head == NULL)
+    {
+        *head = new_node;
+        return;
+    }
+    struct Node *temp = *head;
+    while (temp->next != NULL)
+    {
+        temp = temp->next;
+    }
+    temp->next = new_node;
+}
+
+// Function to insert a process before a given process
+void insert_before(struct Node **head, struct Process process, struct Process before)
+{
+    struct Node *new_node = (struct Node *)malloc(sizeof(struct Node));
+    new_node->process = process;
+    new_node->next = NULL;
+    if (*head == NULL)
+    {
+        *head = new_node;
+        return;
+    }
+    struct Node *temp = *head;
+    while (temp->next != NULL)
+    {
+        if (temp->next->process.identifier == before.identifier)
+        {
+            new_node->next = temp->next;
+            temp->next = new_node;
+            return;
+        }
+        temp = temp->next;
+    }
 }
 
 // Function to remove a process from the linked list
@@ -90,18 +124,39 @@ void print(struct Node *head)
     printf("\n");
 }
 
-// Function to implement round robin scheduling
-void round_robin(struct Node **head, int time_quantum)
+// Function to initialize the linked list
+void initProcessesArray(struct Node *head, struct Process processes[])
 {
+    int i = 0;
+    while (head != NULL)
+    {
+        processes[i++] = head->process;
+        head = head->next;
+    }
+}
+
+// Function to implement round robin scheduling
+void round_robin(struct Node **head, int time_quantum, struct Process processes[], int noOfProcesses)
+{
+    int total_waiting_time = 0, total_turnaround_time = 0;
     struct Node *temp = *head;
     int time = 0, i = 0, total = 0;
     // Calculating the total burst time
+    for (int j = 0; j < noOfProcesses; j++)
+    {
+        total += processes[j].burst;
+    }
+    // find size of linked list
+    int k = 0;
     while (temp != NULL)
     {
-        total += temp->process.burst;
+        k++;
         temp = temp->next;
     }
+    // print size of linked list
+    printf("Size of linked list: %d\n", k);
     temp = *head;
+    printf("--------------------------SIMULATION OF ROUND ROBIN--------------------------\n");
     // Looping until the total burst time is reached
     while (time < total)
     {
@@ -124,9 +179,19 @@ void round_robin(struct Node **head, int time_quantum)
                 // Setting the remaining time to 0
                 temp->process.remaining_time = 0;
             }
+            while (processes[k].arrival <= time && k < noOfProcesses)
+            {
+                insert_before(head, processes[k], temp->process);
+                k++;
+            }
             if (temp->process.remaining_time == 0)
             {
-                printf("Process %d completed at %d\n", temp->process.identifier, time);
+                // print the processes finishing time, turn around time and waiting time
+                printf("Process %d finished at time %d\n", temp->process.identifier, time);
+                printf("Turn around time: %d\n", time - temp->process.arrival);
+                printf("Waiting time: %d\n", time - temp->process.arrival - temp->process.burst);
+                total_waiting_time = total_waiting_time + (time - temp->process.arrival - temp->process.burst);
+                total_turnaround_time = total_turnaround_time + (time - temp->process.arrival);
             }
         }
 
@@ -143,6 +208,10 @@ void round_robin(struct Node **head, int time_quantum)
             temp = *head;
         }
     }
+    printf("--------------------------ANALYSIS OF ROUND ROBIN--------------------------\n");
+    // print average waiting time and average turn around time
+    printf("Average waiting time: %f, Average turnaround time: %f\n", (float)total_waiting_time / noOfProcesses,
+           (float)total_turnaround_time / noOfProcesses);
 }
 
 int main()
@@ -151,16 +220,9 @@ int main()
     int number_of_processes;
     printf("Enter the number of processes: ");
     scanf("%d", &number_of_processes);
-
-    // Array to store the waiting time for each process
-    int waiting_time[number_of_processes];
-
-    // Array to store the turnaround time for each process
-    int turnaround_time[number_of_processes];
-
-    // Linked list to store the processes
+    // Process array
+    struct Process processes[number_of_processes];
     struct Node *head = NULL;
-
     // Taking input for the processes
     for (int i = 0; i < number_of_processes; i++)
     {
@@ -174,8 +236,19 @@ int main()
         process.remaining_time = process.burst;
         insert(&head, process);
     }
+    // Linked list to store the processes
     sort(&head);
-    print(head);
-    round_robin(&head, 4);
+    initProcessesArray(head, processes);
+    // initial process
+    struct Process initial_process = processes[0];
+    head = NULL;
+    insert(&head, initial_process);
+    int i = 1;
+    while (processes[i].arrival == initial_process.arrival)
+    {
+        insert(&head, processes[i]);
+        i++;
+    }
+    round_robin(&head, 1, processes, number_of_processes);
     return 0;
 }
