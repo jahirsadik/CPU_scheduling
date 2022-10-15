@@ -1,12 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-// Struct named Process with members arrival, burst, priority and remaining_time
+// Struct named Process with members arrival, burst, identifier and remaining_time
 struct Process
 {
     int arrival;
     int burst;
-    int priority;
+    int identifier;
     int remaining_time;
 };
 
@@ -55,13 +55,13 @@ void sort(struct Node **head)
             }
             if (i->process.arrival == j->process.arrival)
             {
-                if (i->process.priority > j->process.priority)
+                if (i->process.identifier > j->process.identifier)
                 {
                     struct Process temp = i->process;
                     i->process = j->process;
                     j->process = temp;
                 }
-                if (i->process.priority == j->process.priority)
+                if (i->process.identifier == j->process.identifier)
                 {
                     if (i->process.burst > j->process.burst)
                     {
@@ -83,114 +83,66 @@ void print(struct Node *head)
     int i = 1;
     while (head != NULL)
     {
-        printf("Process: %d, Arrival: %d, Burst: %d, Priority: %d\n", i++, head->process.arrival, head->process.burst,
-               head->process.priority);
+        printf("Process: %d, Arrival: %d, Burst: %d, identifier: %d\n", i++, head->process.arrival, head->process.burst,
+               head->process.identifier);
         head = head->next;
     }
     printf("\n");
 }
 
-// Function to calculate the waiting time for each process
-void calculate_waiting_time(struct Node *head, int *waiting_time)
+// Function to implement round robin scheduling
+void round_robin(struct Node **head, int time_quantum)
 {
-    int time = 0;
-    int count = 0;
-    while (head != NULL)
-    {
-        if (head->process.arrival > time)
-        {
-            time = head->process.arrival;
-        }
-        waiting_time[count] = time - head->process.arrival;
-        time += head->process.burst;
-        count++;
-        head = head->next;
-    }
-}
-
-// Function to calculate the turnaround time for each process
-void calculate_turnaround_time(struct Node *head, int *turnaround_time, int *waiting_time)
-{
-    int count = 0;
-    while (head != NULL)
-    {
-        turnaround_time[count] = head->process.burst + waiting_time[count];
-        count++;
-        head = head->next;
-    }
-}
-
-// Function to calculate the average waiting time for each process
-void calculate_average_waiting_time(int *waiting_time, int number_of_processes)
-{
-    int sum = 0;
-    for (int i = 0; i < number_of_processes; i++)
-    {
-        sum += waiting_time[i];
-    }
-    printf("Average Waiting Time: %f\n", (float)sum / number_of_processes);
-}
-
-// Function to calculate the average turnaround time for each process
-void calculate_average_turnaround_time(int *turnaround_time, int number_of_processes)
-{
-    int sum = 0;
-    for (int i = 0; i < number_of_processes; i++)
-    {
-        sum += turnaround_time[i];
-    }
-    printf("Average Turnaround Time: %f\n", (float)sum / number_of_processes);
-}
-
-// print the Gantt chart for round robin scheduling
-void print_gantt_chart(struct Node *head, int *waiting_time)
-{
-    printf("Gantt Chart:\n");
-    int time = 0;
-    while (head != NULL)
-    {
-        if (head->process.arrival > time)
-        {
-            time = head->process.arrival;
-        }
-        printf("%d ", time);
-        time += head->process.burst;
-        printf("%d ", time);
-        printf("P%d ", head->process.priority);
-        head = head->next;
-    }
-    printf("\n");
-}
-
-// Round Robin Scheduling Algorithm
-void round_robin_scheduling(struct Node *head, int time_quantum)
-{
-    // Sorting the linked list based on arrival time
-    sort(&head);
-    // Printing the linked list
-    print(head);
-    // Calculating the number of processes
-    int number_of_processes = 0;
-    struct Node *temp = head;
+    struct Node *temp = *head;
+    int time = 0, i = 0, total = 0;
+    // Calculating the total burst time
     while (temp != NULL)
     {
-        number_of_processes++;
+        total += temp->process.burst;
         temp = temp->next;
     }
-    // Creating an array to store the waiting time for each process
-    int *waiting_time = (int *)malloc(number_of_processes * sizeof(int));
-    // Creating an array to store the turnaround time for each process
-    int *turnaround_time = (int *)malloc(number_of_processes * sizeof(int));
-    // Calculating the waiting time for each process
-    calculate_waiting_time(head, waiting_time);
-    // Calculating the turnaround time for each process
-    calculate_turnaround_time(head, turnaround_time, waiting_time);
-    // Calculating the average waiting time
-    calculate_average_waiting_time(waiting_time, number_of_processes);
-    // Calculating the average turnaround time
-    calculate_average_turnaround_time(turnaround_time, number_of_processes);
-    // Printing the Gantt Chart
-    print_gantt_chart(head, waiting_time);
+    temp = *head;
+    // Looping until the total burst time is reached
+    while (time < total)
+    {
+        // If the process has remaining time & the arrival time is less than equal to the current time
+        if (temp->process.remaining_time > 0 && temp->process.arrival <= time)
+        {
+            printf("Time %d-%d: Process %d\n", time, time + time_quantum, temp->process.identifier);
+            // If the remaining time is greater than the time quantum
+            if (temp->process.remaining_time > time_quantum)
+            {
+                // Reducing the remaining time by the time quantum
+                temp->process.remaining_time -= time_quantum;
+                // Increasing the time by the time quantum
+                time += time_quantum;
+            }
+            else
+            {
+                // Increasing the time by the remaining time
+                time += temp->process.remaining_time;
+                // Setting the remaining time to 0
+                temp->process.remaining_time = 0;
+            }
+            if (temp->process.remaining_time == 0)
+            {
+                printf("Process %d completed at %d\n", temp->process.identifier, time);
+            }
+        }
+
+        // If the temp is not the last node
+        if (temp->next != NULL)
+        {
+            // Setting the temp to the next node
+            temp = temp->next;
+        }
+        // If the temp is the last node
+        else
+        {
+            // Setting the temp to the head of the linked list
+            temp = *head;
+        }
+    }
 }
 
 int main()
@@ -217,23 +169,13 @@ int main()
         scanf("%d", &process.arrival);
         printf("Enter the burst time for process %d: ", i);
         scanf("%d", &process.burst);
-        printf("Enter the priority for process %d: ", i);
-        scanf("%d", &process.priority);
+        printf("Enter the Identifier for process %d: ", i);
+        scanf("%d", &process.identifier);
         process.remaining_time = process.burst;
         insert(&head, process);
     }
-    round_robin_scheduling(head, 1);
-
-    // // Calculating the waiting time for each process
-    // calculate_waiting_time(head, waiting_time);
-    // print_gantt_chart(head, waiting_time);
-    // // Calculating the turnaround time for each process
-    // calculate_turnaround_time(head, turnaround_time, waiting_time);
-
-    // // Calculating the average waiting time for each process
-    // calculate_average_waiting_time(waiting_time, number_of_processes);
-
-    // // Calculating the average turnaround time for each process
-    // calculate_average_turnaround_time(turnaround_time, number_of_processes);
+    sort(&head);
+    print(head);
+    round_robin(&head, 4);
     return 0;
 }
