@@ -117,8 +117,8 @@ void print(struct Node *head)
     int i = 1;
     while (head != NULL)
     {
-        printf("Process: %d, Arrival: %d, Burst: %d, identifier: %d\n", i++, head->process.arrival, head->process.burst,
-               head->process.identifier);
+        printf("Process: %d, Arrival: %d, Burst: %d, identifier: %d remaining: %d\n", i++, head->process.arrival, head->process.burst,
+               head->process.identifier, head->process.remaining_time);
         head = head->next;
     }
     printf("\n");
@@ -160,6 +160,9 @@ void round_robin(struct Node **head, int time_quantum, struct Process processes[
     // Looping until the total burst time is reached
     while (time < total)
     {
+        printf("///////\nLinked List now:");
+        print(*head);
+        printf("///////\n");
         // If the process has remaining time & the arrival time is less than equal to the current time
         if (temp->process.remaining_time > 0 && temp->process.arrival <= time)
         {
