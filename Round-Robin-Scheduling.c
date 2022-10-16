@@ -95,21 +95,31 @@ void sort(struct Node **head)
             }
             if (i->process.arrival == j->process.arrival)
             {
-                if (i->process.identifier > j->process.identifier)
+
+                if (i->process.burst > j->process.burst)
                 {
                     struct Process temp = i->process;
                     i->process = j->process;
                     j->process = temp;
                 }
-                if (i->process.identifier == j->process.identifier)
-                {
-                    if (i->process.burst > j->process.burst)
-                    {
-                        struct Process temp = i->process;
-                        i->process = j->process;
-                        j->process = temp;
-                    }
-                }
+            }
+        }
+    }
+}
+
+// Function to sort the linked list based on burst time
+void sort_burst(struct Node **head)
+{
+    struct Node *i, *j;
+    for (i = *head; i != NULL; i = i->next)
+    {
+        for (j = i->next; j != NULL; j = j->next)
+        {
+            if (i->process.burst > j->process.burst)
+            {
+                struct Process temp = i->process;
+                i->process = j->process;
+                j->process = temp;
             }
         }
     }
@@ -123,7 +133,7 @@ void print(struct Node *head)
     int i = 1;
     while (head != NULL)
     {
-        printf("Process: %d, Arrival: %d, Burst: %d, identifier: %d Remaining: %d\n", i++, head->process.arrival, head->process.burst,
+        printf("Process: %d, Arrival: %d, Burst: %d, identifier: %d Remaining: %d\n", head->process.identifier, head->process.arrival, head->process.burst,
                head->process.identifier, head->process.remaining_time);
         head = head->next;
     }
@@ -214,6 +224,94 @@ void round_robin(struct Node **head, int time_quantum, struct Process processes[
     }
     printf("--------------------------ANALYSIS OF ROUND ROBIN--------------------------\n");
     // print average waiting time and average turn around time
+    printf("Average waiting time: %f, Average turnaround time: %f\n\n\n", (float)total_waiting_time / noOfProcesses,
+           (float)total_turnaround_time / noOfProcesses);
+}
+
+// Function to implement round robin scheduling
+void SJF(struct Node **head, struct Process processes[], int noOfProcesses)
+{
+    int total_waiting_time = 0, total_turnaround_time = 0;
+    struct Node *temp = *head;
+    int time = 0, i = 0, total = 0;
+    // Calculating the total burst time
+    for (int j = 0; j < noOfProcesses; j++)
+    {
+        total += processes[j].burst;
+    }
+    // find size of linked list
+    int k = 0;
+    while (temp != NULL)
+    {
+        k++;
+        temp = temp->next;
+    }
+    temp = *head;
+    printf("--------------------------SIMULATION OF SJF(Pre-emptive)--------------------------\n");
+    // Looping until the total burst time is reached
+    while (time < total)
+    {
+        // If the process has remaining time & the arrival time is less than equal to the current time
+        if (temp->process.remaining_time > 0 && temp->process.arrival <= time)
+        {
+            int endEstimate = time + temp->process.remaining_time;
+            int minBurst = temp->process.burst, minBurstArrival = temp->process.arrival;
+            while (processes[k].arrival <= endEstimate && k < noOfProcesses)
+            {
+                insert(head, processes[k]);
+                if (processes[k].burst < minBurst)
+                {
+                    minBurst = processes[k].burst;
+                    minBurstArrival = processes[k].arrival;
+                    k++;
+                    break;
+                }
+                k++;
+            }
+            if (temp->process.burst != minBurst)
+            {
+                // pre-emp
+                printf("Time %d-%d: Process %d\n", time, minBurstArrival, temp->process.identifier);
+                temp->process.remaining_time -= (minBurstArrival - time);
+                time = minBurstArrival;
+                sort_burst(head);
+                temp = *head;
+            }
+            else
+            {
+                temp->process.remaining_time = 0;
+                // run till end
+                printf("Time %d-%d: Process %d\n", time, endEstimate, temp->process.identifier);
+                time = endEstimate;
+                // print the processes finishing time, turn around time and waiting time
+                printf("Process %d finished at time %d\n", temp->process.identifier, time);
+                printf("Turn around time: %d\n", time - temp->process.arrival);
+                printf("Waiting time: %d\n", time - temp->process.arrival - temp->process.burst);
+                total_waiting_time = total_waiting_time + (time - temp->process.arrival - temp->process.burst);
+                total_turnaround_time = total_turnaround_time + (time - temp->process.arrival);
+                sort_burst(head);
+                temp = *head;
+            }
+        }
+        else
+        {
+            // If the temp is not the last node
+            if (temp->next != NULL)
+            {
+                // Setting the temp to the next node
+                temp = temp->next;
+            }
+            // If the temp is the last node
+            else
+            {
+                // Setting the temp to the head of the linked list
+                temp = *head;
+            }
+        }
+    }
+
+    printf("\n--------------------------ANALYSIS OF SJF(Pre-emptive)--------------------------\n");
+    // print average waiting time and average turn around time
     printf("Average waiting time: %f, Average turnaround time: %f\n", (float)total_waiting_time / noOfProcesses,
            (float)total_turnaround_time / noOfProcesses);
 }
@@ -240,7 +338,9 @@ int main()
         process.remaining_time = process.burst;
         insert(&head, process);
     }
-    // Linked list to store the processes
+
+    // ROUND ROBIN
+
     sort(&head);
     initProcessesArray(head, processes);
     // initial process
@@ -254,5 +354,16 @@ int main()
         i++;
     }
     round_robin(&head, 4, processes, number_of_processes);
+
+    // SJF
+    head = NULL;
+    insert(&head, initial_process);
+    i = 1;
+    while (processes[i].arrival == initial_process.arrival)
+    {
+        insert(&head, processes[i]);
+        i++;
+    }
+    SJF(&head, processes, number_of_processes);
     return 0;
 }
