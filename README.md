@@ -5,7 +5,7 @@
 weak, so he planned to give a mathematical challenge from their ongoing Operating Systems course.
 He set a CPU scheduling problem for SONTU and told him to solve this with the C code for different
 CPU scheduling algorithms for other purposes."
-<br/><br/>
+>
 Input example:
 <br/><br/>
 ![image](https://user-images.githubusercontent.com/59853499/196252187-17b26f30-1a74-480e-96b7-28e27d021c14.png)
