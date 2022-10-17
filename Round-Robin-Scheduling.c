@@ -152,8 +152,11 @@ void initProcessesArray(struct Node *head, struct Process processes[])
 }
 
 // Function to implement round robin scheduling
-void round_robin(struct Node **head, int time_quantum, struct Process processes[], int noOfProcesses)
+void round_robin(struct Node **head, struct Process processes[], int noOfProcesses)
 {
+    int time_quantum;
+    printf("Enter the time quantum: ");
+    scanf("%d", &time_quantum);
     int total_waiting_time = 0, total_turnaround_time = 0;
     struct Node *temp = *head;
     int time = 0, i = 0, total = 0;
@@ -353,7 +356,7 @@ int main()
         insert(&head, processes[i]);
         i++;
     }
-    round_robin(&head, 4, processes, number_of_processes);
+    round_robin(&head, processes, number_of_processes);
 
     // SJF
     head = NULL;
